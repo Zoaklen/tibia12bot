@@ -84,13 +84,13 @@ void CaveBotManager::think(long long clock)
             if (!this->integrated && this->integratedCaveBots.size() < 1)
             {
                 //printf("Alone mode, verifying if can step...\n");
-                this->canStepWaypoint = this->shouldStepWaypoint() || (clock >= maxWaypointTime && getWaypoint(currentWaypoint + 1).z == getWaypoint(currentWaypoint).z);
+                this->canStepWaypoint = this->shouldStepWaypoint() || (clock >= maxWaypointTime && getWaypoint(currentWaypoint + 1).position.z == getWaypoint(currentWaypoint).position.z);
             }
             else if (this->integratedCaveBots.size() > 0)
             {
                 //printf("Leader mode, verifying if can step...\n");
                 if (!autoFreeMode)
-                    this->canStepWaypoint = !this->helpingAlly && !(this->currentWaypoint < this->maximumReachableWaypoint&& clock <= maxWaypointTime) && (this->shouldStepWaypoint() || (clock >= maxWaypointTime && getWaypoint(currentWaypoint + 1).z == myPos.z));
+                    this->canStepWaypoint = !this->helpingAlly && !(this->currentWaypoint < this->maximumReachableWaypoint&& clock <= maxWaypointTime) && (this->shouldStepWaypoint() || (clock >= maxWaypointTime && getWaypoint(currentWaypoint + 1).position.z == myPos.z));
                 else
                     this->canStepWaypoint = true;
                 //printf("Verifying for integrateds behind...\n");
@@ -99,7 +99,7 @@ void CaveBotManager::think(long long clock)
                     //printf("Integrated: %p...\n", cbm->helpingAlly);
                     //printf("Integrated: %d...\n", cbm->currentWaypoint);
                     //printf("Integrated: %d...\n", cbm->shouldStepWaypoint());
-                    if (cbm->helpingAlly != nullptr || (cbm->currentWaypoint < cbm->maximumReachableWaypoint && clock < cbm->maxWaypointTime) || !(cbm->shouldStepWaypoint() || (clock >= cbm->maxWaypointTime && getWaypoint(currentWaypoint + 1).z == myPos.z)))
+                    if (cbm->helpingAlly != nullptr || (cbm->currentWaypoint < cbm->maximumReachableWaypoint && clock < cbm->maxWaypointTime) || !(cbm->shouldStepWaypoint() || (clock >= cbm->maxWaypointTime && getWaypoint(currentWaypoint + 1).position.z == myPos.z)))
                     {
                         this->canStepWaypoint = false;
                         break;
@@ -120,13 +120,13 @@ void CaveBotManager::think(long long clock)
             {
                 if (integrated)
                 {
-                    if (this->canStepWaypoint || this->shouldStepWaypoint() || (clock >= maxWaypointTime && getWaypoint(nextwp).z == myPos.z))
+                    if (this->canStepWaypoint || this->shouldStepWaypoint() || (clock >= maxWaypointTime && getWaypoint(nextwp).position.z == myPos.z))
                     {
                         if(this->currentWaypoint < waypoints->size()-1)
                             this->currentWaypoint++;
                         maxWaypointTime = clock + this->waypointWaitTime;
                     }
-                    vec3 wp = getWaypoint(currentWaypoint);
+                    Waypoint wp = getWaypoint(currentWaypoint);
                     this->walkTo(wp, playerData);
                 }
                 else
@@ -154,7 +154,7 @@ void CaveBotManager::think(long long clock)
             }
             else
             {
-                while (this->canStepWaypoint || ((this->shouldStepWaypoint() || (clock >= maxWaypointTime && getWaypoint(nextwp).z == myPos.z)) && this->currentWaypoint < this->maximumReachableWaypoint))
+                while (this->canStepWaypoint || ((this->shouldStepWaypoint() || (clock >= maxWaypointTime && getWaypoint(nextwp).position.z == myPos.z)) && this->currentWaypoint < this->maximumReachableWaypoint))
                 {
                     if (canStepWaypoint && integratedCaveBots.size() > 0)
                     {
@@ -176,7 +176,7 @@ void CaveBotManager::think(long long clock)
                         return;
                     }
                 }
-                vec3 wp = getWaypoint(currentWaypoint);
+                Waypoint wp = getWaypoint(currentWaypoint);
                 this->walkTo(wp, playerData);
             }
             //printf("Walking to waypoint...\n");

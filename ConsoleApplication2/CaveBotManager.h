@@ -7,10 +7,15 @@
 #include <Windows.h>
 #include "PointerMap.h"
 
+struct Waypoint {
+    vec3 position = {0, 0, 0};
+    bool important = false;
+};
+
 class CaveBotManager
 {
 public:
-	std::vector<vec3>* waypoints;
+	std::vector<Waypoint>* waypoints;
     unsigned int currentWaypoint = 0;
     vec3 myPos = { 0 };
     HWND window;
@@ -34,7 +39,7 @@ public:
     unsigned int maximumReachableWaypoint = 0;
     bool autoFreeMode = false;
 
-    CaveBotManager(std::vector<vec3>* waypointsPointer, PlayerData* playerData, PointerMap* pointerMap, HANDLE process, HWND window, PlayerData* leader = NULL)
+    CaveBotManager(std::vector<Waypoint>* waypointsPointer, PlayerData* playerData, PointerMap* pointerMap, HANDLE process, HWND window, PlayerData* leader = NULL)
     {
         this->waypoints = waypointsPointer;
         this->process = process;
@@ -48,19 +53,19 @@ public:
 
     bool shouldStepWaypoint()
     {
-        vec3 wp = getWaypoint(currentWaypoint);
-        vec3 nextwp = getWaypoint(currentWaypoint+1);
+        Waypoint wp = getWaypoint(currentWaypoint);
+        Waypoint nextwp = getWaypoint(currentWaypoint+1);
 
-        if (myPos.z != wp.z)
+        if (myPos.z != wp.position.z)
             return true;
 
-        if (myPos == wp)
+        if (myPos == wp.position)
             return true;
 
-        if((abs(myPos.x - wp.x) + abs(myPos.y - wp.y)) <= 4 && nextwp.z == wp.z)
+        if(!wp.important && (abs(myPos.x - wp.position.x) + abs(myPos.y - wp.position.y)) <= 4 && nextwp.position.z == wp.position.z)
             return true;
 
-        if ((abs(myPos.x - wp.x) + abs(myPos.y - wp.y)) > 100)
+        if ((abs(myPos.x - wp.position.x) + abs(myPos.y - wp.position.y)) > 100)
             return true;
 
         return false;
@@ -100,7 +105,7 @@ public:
         fprintf_s(f, "%d\n", waypoints->size());
         for (auto& v : *this->waypoints)
         {
-            fprintf_s(f, "%d %d %d\n", v.x, v.y, v.z);
+            fprintf_s(f, "%d %d %d %s\n", v.position.x, v.position.y, v.position.z, v.important ? "Y" : "");
         }
         fclose(f);
     }
@@ -118,16 +123,28 @@ public:
         fscanf_s(f, "%d %d", &killingTimeStart, &killingTimeEnd);
         fscanf_s(f, "%d", &size);
         waypoints->reserve(size);
-        vec3 v;
-        while(fscanf_s(f, "%d %d %d", &v.x, &v.y, &v.z) > 0)
+        Waypoint v;
+        char line[20];
+        while (fgets(line, 19, f) != NULL)
         {
+            //fscanf_s(f, "%d %d %d", &v.x, &v.y, &v.z) > 0
+            char imp = 'N';
+            sscanf_s(line, "%d %d %d %c", &v.position.x, &v.position.y, &v.position.z, &imp, 1);
+            v.important = imp == 'Y';
+            if (v.position == vec3{0, 0, 0})
+                continue;
             waypoints->push_back(v);
-            printf("Loaded [%d %d %d] as waypoint %d.\n", v.x, v.y, v.z, waypoints->size());
+            printf("Loaded [%d %d %d%s] as waypoint %d.\n", v.position.x, v.position.y, v.position.z, v.important ? " IMPORTANT" : "", waypoints->size());
         }
         fclose(f);
         printf("Killing time start %d and end %d.\n", killingTimeStart, killingTimeEnd);
         shareDataToIntegrateds();
         return true;
+    }
+
+    void walkTo(Waypoint wp, PlayerData* playerData)
+    {
+        walkTo(wp.position, playerData);
     }
     
     void walkTo(vec3 pos, PlayerData* playerData)
@@ -172,7 +189,7 @@ public:
         this->autoTrackSteps = step;
     }
 
-    vec3 getWaypoint(int index)
+    Waypoint getWaypoint(int index)
     {
         return (*this->waypoints)[index % this->waypoints->size()];
     }

@@ -23,7 +23,7 @@ PlayerData playerData = { 0 };
 std::unique_ptr<CaveBotManager> caveBotManager;
 HWND consoleHandle;
 PointerMap pointerMap;
-std::vector<vec3> caveBotWaypoints;
+std::vector<Waypoint> caveBotWaypoints;
 
 void updateLastScript(char* scriptName, size_t n)
 {
@@ -65,7 +65,7 @@ void inputThread(HANDLE processHandle, HWND window)
         {
             vec3 pos;
             ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos, sizeof(pos), NULL);
-            caveBotWaypoints[caveBotManager->currentWaypoint] = pos;
+            caveBotWaypoints[caveBotManager->currentWaypoint].position = pos;
             printf("Cave bot waypoint %d changed to [%d %d %d]\n", caveBotManager->currentWaypoint, pos.x, pos.y, pos.z);
         }
         if (GetAsyncKeyState(VK_MULTIPLY) & 0x1)
@@ -81,52 +81,47 @@ void inputThread(HANDLE processHandle, HWND window)
         }
         if (GetAsyncKeyState(VK_DECIMAL) & 0x1)
         {
-            vec3 pos;
-            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos, sizeof(pos), NULL);
+            Waypoint pos;
+            pos.important = true;
+            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos.position, sizeof(pos.position), NULL);
             caveBotWaypoints.push_back(pos);
-            if (caveBotManager->autoFreeMode)
-                caveBotWaypoints.push_back(playerData.pos);
-            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.x, pos.y, pos.z, caveBotWaypoints.size());
+            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.position.x, pos.position.y, pos.position.z, caveBotWaypoints.size());
         }
         if (GetAsyncKeyState(VK_DELETE) & 0x1)
         {
-            vec3 pos;
-            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos, sizeof(pos), NULL);
-            pos.x--;
+            Waypoint pos;
+            pos.important = true;
+            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos.position, sizeof(pos.position), NULL);
+            pos.position.x--;
             caveBotWaypoints.push_back(pos);
-            if (caveBotManager->autoFreeMode)
-                caveBotWaypoints.push_back(playerData.pos);
-            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.x, pos.y, pos.z, caveBotWaypoints.size());
+            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.position.x, pos.position.y, pos.position.z, caveBotWaypoints.size());
         }
         if (GetAsyncKeyState(VK_END) & 0x1)
         {
-            vec3 pos;
-            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos, sizeof(pos), NULL);
-            pos.y++;
+            Waypoint pos;
+            pos.important = true;
+            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos.position, sizeof(pos.position), NULL);
+            pos.position.y++;
             caveBotWaypoints.push_back(pos);
-            if (caveBotManager->autoFreeMode)
-                caveBotWaypoints.push_back(playerData.pos);
-            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.x, pos.y, pos.z, caveBotWaypoints.size());
+            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.position.x, pos.position.y, pos.position.z, caveBotWaypoints.size());
         }
         if (GetAsyncKeyState(VK_NEXT) & 0x1)
         {
-            vec3 pos;
-            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos, sizeof(pos), NULL);
-            pos.x++;
+            Waypoint pos;
+            pos.important = true;
+            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos.position, sizeof(pos.position), NULL);
+            pos.position.x++;
             caveBotWaypoints.push_back(pos);
-            if (caveBotManager->autoFreeMode)
-                caveBotWaypoints.push_back(playerData.pos);
-            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.x, pos.y, pos.z, caveBotWaypoints.size());
+            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.position.x, pos.position.y, pos.position.z, caveBotWaypoints.size());
         }
         if (GetAsyncKeyState(VK_HOME) & 0x1)
         {
-            vec3 pos;
-            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos, sizeof(pos), NULL);
-            pos.y--;
+            Waypoint pos;
+            pos.important = true;
+            ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &pos.position, sizeof(pos.position), NULL);
+            pos.position.y--;
             caveBotWaypoints.push_back(pos);
-            if (caveBotManager->autoFreeMode)
-                caveBotWaypoints.push_back(playerData.pos);
-            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.x, pos.y, pos.z, caveBotWaypoints.size());
+            printf("Added position [%d %d %d] to cave bot waypoint %d\n", pos.position.x, pos.position.y, pos.position.z, caveBotWaypoints.size());
         }
 
         if (GetForegroundWindow() == consoleHandle && GetAsyncKeyState(VK_TAB) & 0x1)
@@ -312,7 +307,7 @@ void caveBotThread(HANDLE processHandle, HWND window)
             ReadProcessMemory(processHandle, (LPVOID)pointerMap.positionX, &playerData.pos, sizeof(playerData.pos), NULL);
             ReadProcessMemory(processHandle, (LPVOID)pointerMap.direction, &playerData.direction, sizeof(playerData.direction), NULL);
 
-            if (playerData.pos.distance(oldPosition) >= 20)
+            /*if (playerData.pos.distance(oldPosition) >= 20)
             {
                 vec3 stairPosition = oldPosition;
 
@@ -340,10 +335,13 @@ void caveBotThread(HANDLE processHandle, HWND window)
                 printf("Old: %d %d %d\nCur: %d %d %d\n", oldPosition.x, oldPosition.y, oldPosition.z, playerData.pos.x, playerData.pos.y, playerData.pos.z);
                 printf("Added stair position [%d %d %d] to cave bot waypoint %d\n", stairPosition.x, stairPosition.y, stairPosition.z, caveBotWaypoints.size());
             }
-            else if (playerData.pos.distance(lastTrackedPosition) >= caveBotManager->autoTrackSteps)
+            else */if (playerData.pos.distance(lastTrackedPosition) >= caveBotManager->autoTrackSteps)
             {
+                Waypoint wp;
+                wp.position = playerData.pos;
+                wp.important = false;
                 lastTrackedPosition = playerData.pos;
-                caveBotWaypoints.push_back(playerData.pos);
+                caveBotWaypoints.push_back(wp);
                 printf("Added position [%d %d %d] to cave bot waypoint %d\n", playerData.pos.x, playerData.pos.y, playerData.pos.z, caveBotWaypoints.size());
             }
         }
@@ -361,6 +359,7 @@ void loopThread(HANDLE processHandle, HWND window)
     // Internal variables
     auto clock = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
     auto oldClock = clock;
+    long long deltaTime;
     float hpp = 0.0;
 
     printf("Creating LUA Manager...\n");
@@ -402,9 +401,10 @@ void loopThread(HANDLE processHandle, HWND window)
     while (keepAlive)
     {
         clock = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
+        deltaTime = clock - oldClock;
         for (auto &el : playerData.internalCD)
         {
-            el -= clock - oldClock;
+            el = max(el - deltaTime, -1000000L);
         }
 
         if (disabled)

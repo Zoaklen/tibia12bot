@@ -4,7 +4,7 @@
 #include <Windows.h>
 #include <inttypes.h>
 
-#define PROCESS_NAME L"FuriaOT_client.exe"
+#define PROCESS_NAME L"client.exe"
 
 #define DIRECTION_NORTH 0
 #define DIRECTION_EAST 1
